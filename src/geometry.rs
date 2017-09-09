@@ -43,6 +43,10 @@ impl<'a> Geometry<'a> {
                 ptr::null(),
             );
 
+            gl::EnableVertexAttribArray(0);
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+            gl::BindVertexArray(0);
+
             VAO
         };
 

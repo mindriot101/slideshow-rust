@@ -5,6 +5,7 @@ use std::ffi::CString;
 use std::ptr;
 use std::str;
 
+#[derive(Debug)]
 pub struct ShaderProgram {
     id: GLuint,
 }
