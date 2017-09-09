@@ -1,4 +1,5 @@
-#![allow(dead_code, unused_imports, unused_extern_crates, unused_variables, unused_mut, non_upper_case_globals, non_snake_case)]
+#![allow(dead_code, unused_imports, unused_extern_crates,
+         unused_variables, unused_mut, non_upper_case_globals, non_snake_case)]
 extern crate glfw;
 extern crate gl;
 
@@ -37,11 +38,7 @@ void main() {
 }
 "#;
 
-const vertices: [f32; 9] = [
-    -0.5, -0.5, 0.0,
-    0.5, -0.5, 0.0,
-    0.0, 0.5, 0.0,
-];
+const vertices: [f32; 9] = [-0.5, -0.5, 0.0, 0.5, -0.5, 0.0, 0.0, 0.5, 0.0];
 
 fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).expect("Failed to initialize glfw");
@@ -68,8 +65,7 @@ fn main() {
     let shader_program = ShaderProgram::new(vertexShaderSource, fragmentShaderSource)
         .expect("Cannot create shader program");
 
-    let geometry = Geometry::new(&shader_program, &vertices)
-        .expect("Cannot create geometry");
+    let geometry = Geometry::new(&shader_program, &vertices).expect("Cannot create geometry");
 
     while !window.should_close() {
         process_events(&mut window, &events);
@@ -100,4 +96,3 @@ fn process_events(window: &mut glfw::Window, events: &Receiver<(f64, glfw::Windo
         }
     }
 }
-

@@ -13,7 +13,10 @@ pub struct Geometry<'a> {
 }
 
 impl<'a> Geometry<'a> {
-    pub fn new(shader_program: &'a ShaderProgram, vertices: &[f32]) -> Result<Geometry<'a>, Box<Error>> {
+    pub fn new(
+        shader_program: &'a ShaderProgram,
+        vertices: &[f32],
+    ) -> Result<Geometry<'a>, Box<Error>> {
         let mut VAO = unsafe {
 
             let (mut VBO, mut VAO) = (0, 0);
@@ -24,12 +27,21 @@ impl<'a> Geometry<'a> {
             gl::BindVertexArray(VAO);
 
             gl::BindBuffer(gl::ARRAY_BUFFER, VBO);
-            gl::BufferData(gl::ARRAY_BUFFER,
-                           (vertices.len() * mem::size_of::<GLfloat>()) as GLsizeiptr,
-                           &vertices[0] as *const f32 as *const c_void,
-                           gl::STATIC_DRAW);
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (vertices.len() * mem::size_of::<GLfloat>()) as GLsizeiptr,
+                &vertices[0] as *const f32 as *const c_void,
+                gl::STATIC_DRAW,
+            );
 
-            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 3 * mem::size_of::<GLfloat>() as GLsizei, ptr::null());
+            gl::VertexAttribPointer(
+                0,
+                3,
+                gl::FLOAT,
+                gl::FALSE,
+                3 * mem::size_of::<GLfloat>() as GLsizei,
+                ptr::null(),
+            );
 
             VAO
         };
