@@ -50,30 +50,14 @@ fn main() {
 
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
-    let shader_program = Arc::new(ShaderProgram::new("shaders/basic.vert", "shaders/basic.frag")
-        .expect("Cannot create shader program"));
+    let shader_program = ShaderProgram::new("shaders/basic.vert", "shaders/basic.frag")
+        .expect("Cannot create shader program");
 
     let geometry = Geometry::new(&shader_program, &vertices).expect("Cannot create geometry");
 
     let (tx, rx) = channel();
     let mut watcher = raw_watcher(tx).expect("Cannot create watcher");
     watcher.watch("shaders", RecursiveMode::Recursive).expect("Cannot watch shaders dir");
-
-    let s = shader_program.clone();
-    
-    thread::spawn(move || {
-        loop {
-            match rx.recv() {
-                Ok(RawEvent { path: Some(path), op: Ok(op), cookie }) => {
-                    if !op.contains(op::WRITE) {
-                        continue
-                    }
-                    s.reload();
-                },
-                _ => {},
-            }
-        }
-    });
 
     while !window.should_close() {
         process_events(&mut window, &events);
@@ -87,6 +71,25 @@ fn main() {
 
         window.swap_buffers();
         glfw.poll_events();
+
+        /* Reload shaders, non-blocking */
+        match rx.try_recv() {
+            Ok(RawEvent { path: Some(path), op: Ok(op), .. }) => {
+                if !op.contains(op::WRITE) {
+                    continue;
+                }
+
+                match path.extension() {
+                    Some(ext) => {
+                        if ext == "frag" || ext == "vert" {
+                            shader_program.reload();
+                        }
+                    },
+                    _ => {},
+                }
+            },
+            _ => {},
+        }
     }
 }
 

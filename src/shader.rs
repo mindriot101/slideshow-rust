@@ -7,10 +7,11 @@ use std::str;
 use std::fs::File;
 use std::io::Read;
 use std::time::Duration;
+use std::cell::Cell;
 
 #[derive(Debug)]
 pub struct ShaderProgram {
-    id: GLuint,
+    id: Cell<GLuint>,
     vertex_filename: String,
     fragment_filename: String,
 }
@@ -25,7 +26,7 @@ impl ShaderProgram {
 
         let id = unsafe { create_shader_program(vertex_src, fragment_src)? };
         Ok(ShaderProgram {
-            id: id,
+            id: Cell::new(id),
             vertex_filename: vertex_filename.to_string(),
             fragment_filename: fragment_filename.to_string(),
         })
@@ -33,7 +34,7 @@ impl ShaderProgram {
 
     pub fn activate(&self) {
         unsafe {
-            gl::UseProgram(self.id);
+            gl::UseProgram(self.id.get());
         }
     }
 
@@ -46,10 +47,8 @@ impl ShaderProgram {
     pub fn reload(&self) {
         let vertex_src: &str = &read_from_file(&self.vertex_filename);
         let fragment_src: &str = &read_from_file(&self.fragment_filename);
-        unsafe {
-            update_shader_program(self.id, vertex_src, fragment_src)
-                .expect("Cannot update the shader program");
-        }
+        let id = unsafe { create_shader_program(vertex_src, fragment_src).expect("Could not create shader program") };
+        self.id.set(id);
     }
 }
 
