@@ -29,7 +29,13 @@ use hotloader::Hotloader;
 const SCR_WIDTH: u32 = 800;
 const SCR_HEIGHT: u32 = 600;
 
-const vertices: [f32; 9] = [-0.5, -0.5, 0.0, 0.5, -0.5, 0.0, 0.0, 0.5, 0.0];
+const vertices: [f32; 12] = [
+    0.5, 0.5, 0.0,
+    0.5, -0.5, 0.0,
+    -0.5, -0.5, 0.0,
+    -0.5, 0.5, 0.0,
+];
+const indices: [u32; 6] = [0, 1, 3, 1, 2, 3];
 
 fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).expect("Failed to initialize glfw");
@@ -56,7 +62,11 @@ fn main() {
     let shader_program = ShaderProgram::new("shaders/basic.vert", "shaders/basic.frag")
         .expect("Cannot create shader program");
 
-    let geometry = Geometry::new(&shader_program, &vertices).expect("Cannot create geometry");
+    let geometry = Geometry::new(&shader_program)
+        .add_vertices(&vertices)
+        .add_indices(&indices)
+        .build()
+        .expect("Cannot create geometry");
 
     let hotloader = Hotloader::watch("shaders").expect("Cannot create hotloader");
 
