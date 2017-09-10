@@ -2,15 +2,20 @@
          unused_variables, unused_mut, non_upper_case_globals, non_snake_case)]
 extern crate glfw;
 extern crate gl;
+extern crate notify;
 
 use glfw::{Context, Key, Action};
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{channel, Receiver};
 use std::ffi::CString;
 use std::str;
 use std::ptr;
 use gl::types::*;
+use std::sync::Arc;
 use std::mem;
+use std::thread;
 use std::os::raw::c_void;
+use notify::{Watcher, RecursiveMode, RawEvent, raw_watcher};
+use notify::op;
 
 mod shader;
 use shader::ShaderProgram;
@@ -20,23 +25,6 @@ use geometry::Geometry;
 
 const SCR_WIDTH: u32 = 800;
 const SCR_HEIGHT: u32 = 600;
-
-const vertexShaderSource: &str = r#"
-#version 330 core
-layout (location = 0) in vec3 aPos;
-
-void main() {
-    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
-}
-"#;
-
-const fragmentShaderSource: &str = r#"
-#version 330 core
-out vec4 FragColor;
-void main() {
-    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
-}
-"#;
 
 const vertices: [f32; 9] = [-0.5, -0.5, 0.0, 0.5, -0.5, 0.0, 0.0, 0.5, 0.0];
 
@@ -62,10 +50,30 @@ fn main() {
 
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
-    let shader_program = ShaderProgram::new(vertexShaderSource, fragmentShaderSource)
-        .expect("Cannot create shader program");
+    let shader_program = Arc::new(ShaderProgram::new("shaders/basic.vert", "shaders/basic.frag")
+        .expect("Cannot create shader program"));
 
     let geometry = Geometry::new(&shader_program, &vertices).expect("Cannot create geometry");
+
+    let (tx, rx) = channel();
+    let mut watcher = raw_watcher(tx).expect("Cannot create watcher");
+    watcher.watch("shaders", RecursiveMode::Recursive).expect("Cannot watch shaders dir");
+
+    let s = shader_program.clone();
+    
+    thread::spawn(move || {
+        loop {
+            match rx.recv() {
+                Ok(RawEvent { path: Some(path), op: Ok(op), cookie }) => {
+                    if !op.contains(op::WRITE) {
+                        continue
+                    }
+                    s.reload();
+                },
+                _ => {},
+            }
+        }
+    });
 
     while !window.should_close() {
         process_events(&mut window, &events);

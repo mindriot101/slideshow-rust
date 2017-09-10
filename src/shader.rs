@@ -4,16 +4,31 @@ use gl::types::*;
 use std::ffi::CString;
 use std::ptr;
 use std::str;
+use std::fs::File;
+use std::io::Read;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct ShaderProgram {
     id: GLuint,
+    vertex_filename: String,
+    fragment_filename: String,
 }
 
 impl ShaderProgram {
-    pub fn new(vertex_src: &str, fragment_src: &str) -> Result<ShaderProgram, Box<Error>> {
+    pub fn new(
+        vertex_filename: &str,
+        fragment_filename: &str,
+    ) -> Result<ShaderProgram, Box<Error>> {
+        let vertex_src: &str = &read_from_file(vertex_filename);
+        let fragment_src: &str = &read_from_file(fragment_filename);
+
         let id = unsafe { create_shader_program(vertex_src, fragment_src)? };
-        Ok(ShaderProgram { id: id })
+        Ok(ShaderProgram {
+            id: id,
+            vertex_filename: vertex_filename.to_string(),
+            fragment_filename: fragment_filename.to_string(),
+        })
     }
 
     pub fn activate(&self) {
@@ -27,8 +42,23 @@ impl ShaderProgram {
             gl::UseProgram(0);
         }
     }
+
+    pub fn reload(&self) {
+        let vertex_src: &str = &read_from_file(&self.vertex_filename);
+        let fragment_src: &str = &read_from_file(&self.fragment_filename);
+        unsafe {
+            update_shader_program(self.id, vertex_src, fragment_src)
+                .expect("Cannot update the shader program");
+        }
+    }
 }
 
+fn read_from_file(filename: &str) -> String {
+    let mut file = File::open(filename).expect("Could not open file");
+    let mut s = String::new();
+    file.read_to_string(&mut s).expect("Could not read file");
+    s
+}
 
 unsafe fn create_shader(src: &str, shader_type: GLuint) -> Result<GLuint, Box<Error>> {
     let vertex_shader = gl::CreateShader(shader_type);
@@ -92,4 +122,40 @@ unsafe fn create_shader_program(
     gl::DeleteShader(fragment_shader);
 
     Ok(shader_program)
+}
+
+unsafe fn update_shader_program(
+    shader_program: GLuint,
+    vertex_src: &str,
+    fragment_src: &str,
+) -> Result<(), Box<Error>> {
+    let vertex_shader = create_shader(vertex_src, gl::VERTEX_SHADER)?;
+    let fragment_shader = create_shader(fragment_src, gl::FRAGMENT_SHADER)?;
+
+    gl::AttachShader(shader_program, vertex_shader);
+    gl::AttachShader(shader_program, fragment_shader);
+    gl::LinkProgram(shader_program);
+
+    let mut success = gl::FALSE as GLint;
+    let mut info_log = Vec::with_capacity(512);
+    info_log.set_len(512 - 1);
+    gl::GetProgramiv(shader_program, gl::LINK_STATUS, &mut success);
+    if success != gl::TRUE as GLint {
+        gl::GetProgramInfoLog(
+            shader_program,
+            512,
+            ptr::null_mut(),
+            info_log.as_mut_ptr() as *mut GLchar,
+        );
+        return Err(
+            format!(
+                "ERROR::SHADER::PROGRAM::COMPILATION_FAILED\n{}",
+                str::from_utf8(&info_log).unwrap()
+            ).into(),
+        );
+    }
+
+    gl::DeleteShader(vertex_shader);
+    gl::DeleteShader(fragment_shader);
+    Ok(())
 }
