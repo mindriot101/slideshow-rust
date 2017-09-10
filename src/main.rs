@@ -26,6 +26,8 @@ use geometry::Geometry;
 mod hotloader;
 use hotloader::Hotloader;
 
+mod errors;
+
 const SCR_WIDTH: u32 = 800;
 const SCR_HEIGHT: u32 = 600;
 
@@ -70,6 +72,7 @@ fn main() {
 
     let hotloader = Hotloader::watch("shaders").expect("Cannot create hotloader");
 
+    let mut previous_time = glfw.get_time() as f32;
     while !window.should_close() {
         process_events(&mut window, &events);
 
@@ -77,6 +80,16 @@ fn main() {
             gl::ClearColor(0.2, 0.3, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
+
+        let time = glfw.get_time() as f32;
+        let dt = time - previous_time;
+        let green_value = time.sin() / 2.0 + 0.5;
+
+        println!("GREEN VALUE: {}, TIME: {}, DT: {}", green_value, time, dt);
+
+        shader_program.activate();
+        shader_program.set_float4("ourColor", 0.0, green_value, 0.0, 1.0)
+            .expect("Cannot set ourColor value");
 
         geometry.render();
 
@@ -91,6 +104,7 @@ fn main() {
                 }
             }
         }
+        previous_time = time;
     }
 }
 

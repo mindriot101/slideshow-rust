@@ -9,6 +9,8 @@ use std::io::Read;
 use std::time::Duration;
 use std::cell::Cell;
 
+use errors::Result;
+
 #[derive(Debug)]
 pub struct ShaderProgram {
     id: Cell<GLuint>,
@@ -20,7 +22,7 @@ impl ShaderProgram {
     pub fn new(
         vertex_filename: &str,
         fragment_filename: &str,
-    ) -> Result<ShaderProgram, Box<Error>> {
+    ) -> Result<ShaderProgram> {
         let vertex_src: &str = &read_from_file(vertex_filename);
         let fragment_src: &str = &read_from_file(fragment_filename);
 
@@ -51,6 +53,26 @@ impl ShaderProgram {
         let id = unsafe { create_shader_program(vertex_src, fragment_src).expect("Could not create shader program") };
         self.id.set(id);
     }
+
+    pub fn set_float4(&self, name: &str, v1: f32, v2: f32, v3: f32, v4: f32) -> Result<()> {
+        let loc = self.location(name)?;
+        unsafe {
+            gl::Uniform4f(loc, v1, v2, v3, v4);
+        }
+        Ok(())
+    }
+
+    fn location(&self, name: &str) -> Result<GLint> {
+        let c_name = CString::new(name)?;
+        let loc = unsafe {
+            gl::GetUniformLocation(self.id.get(), c_name.as_ptr())
+        };
+        if loc == -1 {
+            return Err(format!("Cannot find location {} in current shader", name).into());
+        }
+
+        Ok(loc)
+    }
 }
 
 fn read_from_file(filename: &str) -> String {
@@ -60,7 +82,7 @@ fn read_from_file(filename: &str) -> String {
     s
 }
 
-unsafe fn create_shader(src: &str, shader_type: GLuint) -> Result<GLuint, Box<Error>> {
+unsafe fn create_shader(src: &str, shader_type: GLuint) -> Result<GLuint> {
     let vertex_shader = gl::CreateShader(shader_type);
     let c_str_vert = CString::new(src.as_bytes()).expect("Could not create vertex shader c string");
     gl::ShaderSource(vertex_shader, 1, &c_str_vert.as_ptr(), ptr::null());
@@ -90,7 +112,7 @@ unsafe fn create_shader(src: &str, shader_type: GLuint) -> Result<GLuint, Box<Er
 unsafe fn create_shader_program(
     vertex_src: &str,
     fragment_src: &str,
-) -> Result<GLuint, Box<Error>> {
+) -> Result<GLuint> {
     let vertex_shader = create_shader(vertex_src, gl::VERTEX_SHADER)?;
     let fragment_shader = create_shader(fragment_src, gl::FRAGMENT_SHADER)?;
 
@@ -128,7 +150,7 @@ unsafe fn update_shader_program(
     shader_program: GLuint,
     vertex_src: &str,
     fragment_src: &str,
-) -> Result<(), Box<Error>> {
+) -> Result<()> {
     let vertex_shader = create_shader(vertex_src, gl::VERTEX_SHADER)?;
     let fragment_shader = create_shader(fragment_src, gl::FRAGMENT_SHADER)?;
 

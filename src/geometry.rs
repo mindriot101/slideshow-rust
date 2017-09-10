@@ -6,6 +6,7 @@ use std::os::raw::c_void;
 use std::error::Error;
 
 use shader::ShaderProgram;
+use errors::Result;
 
 pub struct Geometry<'a> {
     VAO: GLuint,
@@ -29,7 +30,7 @@ impl<'a> Geometry<'a> {
         self
     }
 
-    pub fn build(mut self) -> Result<Geometry<'a>, Box<::std::error::Error>> {
+    pub fn build(mut self) -> Result<Geometry<'a>> {
         /* Initial checks */
         if let None = self.vertices {
             return Err("No vertices supplied".into())
@@ -84,8 +85,7 @@ impl<'a> Geometry<'a> {
         Ok(self)
     }
 
-    pub fn render(&self) {
-        self.program.activate();
+    pub fn render_no_activate(&self) {
         unsafe {
             gl::BindVertexArray(self.VAO);
             if let Some(indices) = self.indices {
@@ -95,5 +95,9 @@ impl<'a> Geometry<'a> {
             }
         }
         self.program.deactivate();
+    }
+    pub fn render(&self) {
+        self.program.activate();
+        self.render_no_activate();
     }
 }
