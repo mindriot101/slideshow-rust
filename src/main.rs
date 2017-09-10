@@ -23,6 +23,9 @@ use shader::ShaderProgram;
 mod geometry;
 use geometry::Geometry;
 
+mod hotloader;
+use hotloader::Hotloader;
+
 const SCR_WIDTH: u32 = 800;
 const SCR_HEIGHT: u32 = 600;
 
@@ -55,9 +58,7 @@ fn main() {
 
     let geometry = Geometry::new(&shader_program, &vertices).expect("Cannot create geometry");
 
-    let (tx, rx) = channel();
-    let mut watcher = raw_watcher(tx).expect("Cannot create watcher");
-    watcher.watch("shaders", RecursiveMode::Recursive).expect("Cannot watch shaders dir");
+    let hotloader = Hotloader::watch("shaders").expect("Cannot create hotloader");
 
     while !window.should_close() {
         process_events(&mut window, &events);
@@ -72,23 +73,13 @@ fn main() {
         window.swap_buffers();
         glfw.poll_events();
 
-        /* Reload shaders, non-blocking */
-        match rx.try_recv() {
-            Ok(RawEvent { path: Some(path), op: Ok(op), .. }) => {
-                if !op.contains(op::WRITE) {
-                    continue;
+        /* Handle hotloader events */
+        if let Some(path) = hotloader.has_event() {
+            if let Some(ext) = path.extension() {
+                if ext == "frag" || ext == "vert" {
+                    shader_program.reload();
                 }
-
-                match path.extension() {
-                    Some(ext) => {
-                        if ext == "frag" || ext == "vert" {
-                            shader_program.reload();
-                        }
-                    },
-                    _ => {},
-                }
-            },
-            _ => {},
+            }
         }
     }
 }

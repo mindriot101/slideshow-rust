@@ -45,6 +45,7 @@ impl ShaderProgram {
     }
 
     pub fn reload(&self) {
+        println!("Reloading shader ({} + {})", self.vertex_filename, self.fragment_filename);
         let vertex_src: &str = &read_from_file(&self.vertex_filename);
         let fragment_src: &str = &read_from_file(&self.fragment_filename);
         let id = unsafe { create_shader_program(vertex_src, fragment_src).expect("Could not create shader program") };
