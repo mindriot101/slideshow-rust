@@ -85,8 +85,6 @@ fn main() {
         let dt = time - previous_time;
         let green_value = time.sin() / 2.0 + 0.5;
 
-        println!("GREEN VALUE: {}, TIME: {}, DT: {}", green_value, time, dt);
-
         shader_program.activate();
         shader_program.set_float4("ourColor", 0.0, green_value, 0.0, 1.0)
             .expect("Cannot set ourColor value");
