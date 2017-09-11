@@ -83,9 +83,10 @@ fn main() {
 
         let time = glfw.get_time() as f32;
         let dt = time - previous_time;
-        let green_value = time.sin() / 2.0 + 0.5;
+        let mix_value = time.sin() / 2.0 + 0.5;
 
         shader_program.activate(|s| {
+            s.set_float("mixValue", mix_value).unwrap();
             geometry.render(&s);
         });
 

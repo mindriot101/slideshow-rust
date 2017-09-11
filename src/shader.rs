@@ -76,6 +76,14 @@ impl ActivatedShader {
         }
     }
 
+    pub fn set_float(&self, name: &str, value: f32) -> Result<()> {
+        let loc = self.location(name)?;
+        unsafe {
+            gl::Uniform1f(loc, value);
+        }
+        Ok(())
+    }
+
     pub fn set_float4(&self, name: &str, v1: f32, v2: f32, v3: f32, v4: f32) -> Result<()> {
         let loc = self.location(name)?;
         unsafe {
