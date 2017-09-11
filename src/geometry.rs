@@ -5,19 +5,18 @@ use std::ptr;
 use std::os::raw::c_void;
 use std::error::Error;
 
-use shader::ShaderProgram;
+use shader::ActivatedShader;
 use errors::Result;
 
 pub struct Geometry<'a> {
     VAO: GLuint,
-    program: &'a ShaderProgram,
     vertices: Option<&'a [f32]>,
     indices: Option<&'a [u32]>,
 }
 
 impl<'a> Geometry<'a> {
-    pub fn new(shader_program: &'a ShaderProgram) -> Geometry<'a> {
-        Geometry { VAO: 0, program: shader_program, vertices: None, indices: None }
+    pub fn new() -> Geometry<'a> {
+        Geometry { VAO: 0, vertices: None, indices: None }
     }
 
     pub fn add_vertices(mut self, vertices: &'a [f32]) -> Geometry<'a> {
@@ -52,7 +51,7 @@ impl<'a> Geometry<'a> {
                 (vertices.len() * mem::size_of::<GLfloat>()) as GLsizeiptr,
                 &vertices[0] as *const f32 as *const c_void,
                 gl::STATIC_DRAW,
-            );
+                );
 
             if let Some(indices) = self.indices {
                 gl::GenBuffers(1, &mut EBO);
@@ -72,7 +71,7 @@ impl<'a> Geometry<'a> {
                 gl::FALSE,
                 3 * mem::size_of::<GLfloat>() as GLsizei,
                 ptr::null(),
-            );
+                );
 
             gl::EnableVertexAttribArray(0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -85,7 +84,7 @@ impl<'a> Geometry<'a> {
         Ok(self)
     }
 
-    pub fn render_no_activate(&self) {
+    pub fn render(&self, shader: &ActivatedShader) {
         unsafe {
             gl::BindVertexArray(self.VAO);
             if let Some(indices) = self.indices {
@@ -94,10 +93,5 @@ impl<'a> Geometry<'a> {
                 gl::DrawArrays(gl::TRIANGLES, 0, 3);
             }
         }
-        self.program.deactivate();
-    }
-    pub fn render(&self) {
-        self.program.activate();
-        self.render_no_activate();
     }
 }

@@ -18,6 +18,11 @@ pub struct ShaderProgram {
     fragment_filename: String,
 }
 
+#[derive(Debug)]
+pub struct ActivatedShader {
+    id: GLuint,
+}
+
 impl ShaderProgram {
     pub fn new(
         vertex_filename: &str,
@@ -34,16 +39,8 @@ impl ShaderProgram {
         })
     }
 
-    pub fn activate(&self) {
-        unsafe {
-            gl::UseProgram(self.id.get());
-        }
-    }
-
-    pub fn deactivate(&self) {
-        unsafe {
-            gl::UseProgram(0);
-        }
+    pub fn activate(&self) -> ActivatedShader {
+        ActivatedShader::new(self.id.get())
     }
 
     pub fn reload(&self) {
@@ -52,6 +49,29 @@ impl ShaderProgram {
         let fragment_src: &str = &read_from_file(&self.fragment_filename);
         let id = unsafe { create_shader_program(vertex_src, fragment_src).expect("Could not create shader program") };
         self.id.set(id);
+    }
+
+}
+
+impl Drop for ActivatedShader {
+    fn drop(&mut self) {
+        self.deactivate();
+    }
+}
+
+impl ActivatedShader {
+
+    pub fn new(id: GLuint) -> ActivatedShader {
+        unsafe {
+            gl::UseProgram(id);
+        }
+        ActivatedShader { id: id }
+    }
+
+    pub fn deactivate(&self) {
+        unsafe {
+            gl::UseProgram(0);
+        }
     }
 
     pub fn set_float4(&self, name: &str, v1: f32, v2: f32, v3: f32, v4: f32) -> Result<()> {
@@ -65,7 +85,7 @@ impl ShaderProgram {
     fn location(&self, name: &str) -> Result<GLint> {
         let c_name = CString::new(name)?;
         let loc = unsafe {
-            gl::GetUniformLocation(self.id.get(), c_name.as_ptr())
+            gl::GetUniformLocation(self.id, c_name.as_ptr())
         };
         if loc == -1 {
             return Err(format!("Cannot find location {} in current shader", name).into());

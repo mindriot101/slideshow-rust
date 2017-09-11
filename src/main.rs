@@ -64,7 +64,7 @@ fn main() {
     let shader_program = ShaderProgram::new("shaders/basic.vert", "shaders/basic.frag")
         .expect("Cannot create shader program");
 
-    let geometry = Geometry::new(&shader_program)
+    let geometry = Geometry::new()
         .add_vertices(&vertices)
         .add_indices(&indices)
         .build()
@@ -85,11 +85,13 @@ fn main() {
         let dt = time - previous_time;
         let green_value = time.sin() / 2.0 + 0.5;
 
-        shader_program.activate();
-        shader_program.set_float4("ourColor", 0.0, green_value, 0.0, 1.0)
-            .expect("Cannot set ourColor value");
+        {
+            let s = shader_program.activate();
+            s.set_float4("ourColor", 0.0, green_value, 0.0, 1.0)
+                .expect("Cannot set ourColor value");
 
-        geometry.render();
+            geometry.render(&s);
+        }
 
         window.swap_buffers();
         glfw.poll_events();
