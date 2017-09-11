@@ -121,12 +121,9 @@ unsafe fn create_shader(src: &str, shader_type: GLuint) -> Result<GLuint> {
             ptr::null_mut(),
             info_log.as_mut_ptr() as *mut GLchar,
         );
-        return Err(
-            format!(
-                "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n{}",
-                str::from_utf8(&info_log).expect("Cannot read info_log")
-            ).into(),
-        );
+
+        let s = info_log_to_str(info_log);
+        return Err(format!("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n{}", s).into());
     }
     Ok(vertex_shader)
 }
@@ -194,7 +191,7 @@ unsafe fn update_shader_program(
         return Err(
             format!(
                 "ERROR::SHADER::PROGRAM::COMPILATION_FAILED\n{}",
-                str::from_utf8(&info_log).unwrap()
+                info_log_to_str(info_log)
             ).into(),
         );
     }
@@ -202,4 +199,11 @@ unsafe fn update_shader_program(
     gl::DeleteShader(vertex_shader);
     gl::DeleteShader(fragment_shader);
     Ok(())
+}
+
+fn info_log_to_str(info_log: Vec<u8>) -> String {
+    let s = str::from_utf8(&info_log).unwrap();
+    let s: String = s.chars().filter(|c| *c != '\0').collect();
+    let s = s.trim_right();
+    s.to_string()
 }
