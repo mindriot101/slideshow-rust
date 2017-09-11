@@ -85,13 +85,9 @@ fn main() {
         let dt = time - previous_time;
         let green_value = time.sin() / 2.0 + 0.5;
 
-        {
-            let s = shader_program.activate();
-            s.set_float4("ourColor", 0.0, green_value, 0.0, 1.0)
-                .expect("Cannot set ourColor value");
-
+        shader_program.activate(|s| {
             geometry.render(&s);
-        }
+        });
 
         window.swap_buffers();
         glfw.poll_events();

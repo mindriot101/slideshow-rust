@@ -39,8 +39,10 @@ impl ShaderProgram {
         })
     }
 
-    pub fn activate(&self) -> ActivatedShader {
-        ActivatedShader::new(self.id.get())
+    pub fn activate<F>(&self, f: F)
+        where F: Fn(&ActivatedShader) {
+            let activated_shader = ActivatedShader::new(self.id.get());
+            f(&activated_shader);
     }
 
     pub fn reload(&self) {
